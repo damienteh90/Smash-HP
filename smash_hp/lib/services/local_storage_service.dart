@@ -8,6 +8,8 @@ import '../models/player_profile.dart';
 class LocalStorageService {
   static const String _playerProfileKey = 'player_profile';
   static const String _activeBattleSessionKey = 'active_battle_session';
+  static const String _soundEnabledKey = 'sound_enabled';
+  static const String _vibrationEnabledKey = 'vibration_enabled';
 
   late final SharedPreferences _prefs;
   bool _initialized = false;
@@ -38,6 +40,34 @@ class LocalStorageService {
   Future<void> savePlayerProfile(PlayerProfile profile) async {
     if (!_initialized) throw StateError('LocalStorageService not initialized');
     await _prefs.setString(_playerProfileKey, profile.toJsonString());
+  }
+
+  /// Clear saved player profile
+  Future<void> clearPlayerProfile() async {
+    if (!_initialized) throw StateError('LocalStorageService not initialized');
+    await _prefs.remove(_playerProfileKey);
+  }
+
+  /// Sound preference, defaults to enabled
+  bool isSoundEnabled() {
+    if (!_initialized) throw StateError('LocalStorageService not initialized');
+    return _prefs.getBool(_soundEnabledKey) ?? true;
+  }
+
+  Future<void> setSoundEnabled(bool enabled) async {
+    if (!_initialized) throw StateError('LocalStorageService not initialized');
+    await _prefs.setBool(_soundEnabledKey, enabled);
+  }
+
+  /// Vibration preference, defaults to enabled
+  bool isVibrationEnabled() {
+    if (!_initialized) throw StateError('LocalStorageService not initialized');
+    return _prefs.getBool(_vibrationEnabledKey) ?? true;
+  }
+
+  Future<void> setVibrationEnabled(bool enabled) async {
+    if (!_initialized) throw StateError('LocalStorageService not initialized');
+    await _prefs.setBool(_vibrationEnabledKey, enabled);
   }
 
   /// Get active battle session

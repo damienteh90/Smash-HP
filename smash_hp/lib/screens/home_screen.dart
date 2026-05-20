@@ -5,6 +5,7 @@ import '../services/local_storage_service.dart';
 import '../theme/minecraft_theme.dart';
 import 'battle_screen.dart';
 import 'player_setup_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   static const String routeName = '/home';
@@ -47,6 +48,19 @@ class _HomeScreenState extends State<HomeScreen> {
             color: MinecraftTheme.deepStoneCharcoal,
             size: 28,
           ),
+          actions: [
+            IconButton(
+              tooltip: 'Settings',
+              onPressed: () {
+                Navigator.of(context).pushNamed(SettingsScreen.routeName);
+              },
+              icon: const Icon(
+                Icons.settings,
+                color: MinecraftTheme.deepStoneCharcoal,
+                size: 26,
+              ),
+            ),
+          ],
           titleTextStyle: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,

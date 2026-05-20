@@ -1,4 +1,4 @@
-package com.example.smash_hp
+package com.damientehgames.smashhp
 
 import io.flutter.embedding.android.FlutterActivity
 

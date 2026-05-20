@@ -1,5 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 
+import 'local_storage_service.dart';
+
 class SoundEffects {
   static void playMiss() => _play('attack_miss.mp3');
   static void playHit() => _play('attack_hit.mp3');
@@ -7,6 +9,10 @@ class SoundEffects {
   static void playKo() => _play('ko.mp3');
 
   static Future<void> _play(String fileName) async {
+    if (!localStorage.isSoundEnabled()) {
+      return;
+    }
+
     final player = AudioPlayer();
 
     try {

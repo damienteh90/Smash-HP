@@ -121,6 +121,10 @@ class _BattleScreenState extends State<BattleScreen>
     required bool wasCritical,
     required bool isKo,
   }) {
+    if (!localStorage.isVibrationEnabled()) {
+      return;
+    }
+
     if (isKo || wasCritical) {
       HapticFeedback.heavyImpact();
     } else if (wasMiss) {

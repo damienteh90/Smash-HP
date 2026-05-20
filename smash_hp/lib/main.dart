@@ -5,6 +5,7 @@ import 'screens/battle_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/ko_screen.dart';
 import 'screens/player_setup_screen.dart';
+import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/local_storage_service.dart';
 
@@ -35,6 +36,7 @@ class SmashHpApp extends StatelessWidget {
         PlayerSetupScreen.routeName: (_) => const PlayerSetupScreen(),
         BattleScreen.routeName: (_) => const BattleScreen(),
         KoScreen.routeName: (_) => const KoScreen(),
+        SettingsScreen.routeName: (_) => const SettingsScreen(),
       },
     );
   }
