@@ -16,8 +16,6 @@ class HpBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percentage = maxHp == 0 ? 0.0 : (currentHp / maxHp).clamp(0.0, 1.0);
-    const color = MinecraftTheme.healthGreen;
-    const darkColor = Color(0xFF188D35);
 
     return Container(
       decoration: BoxDecoration(
@@ -36,22 +34,51 @@ class HpBar extends StatelessWidget {
         ],
       ),
       height: height,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          const ColoredBox(color: Color(0xFF1D1915)),
-          FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: percentage,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: color,
-                border: Border(right: BorderSide(color: darkColor, width: 2)),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(end: percentage),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+        builder: (context, animatedPercentage, child) {
+          final fillColor = _getFillColor(animatedPercentage);
+          final edgeColor = Color.lerp(
+            fillColor,
+            MinecraftTheme.deepStoneCharcoal,
+            0.35,
+          )!;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              const ColoredBox(color: Color(0xFF1D1915)),
+              FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: animatedPercentage,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: fillColor,
+                    border: Border(
+                      right: BorderSide(color: edgeColor, width: 2),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
+  }
+
+  Color _getFillColor(double percentage) {
+    if (percentage >= 0.70) {
+      return MinecraftTheme.hpGreen;
+    }
+    if (percentage >= 0.40) {
+      return MinecraftTheme.primaryGold;
+    }
+    if (percentage >= 0.15) {
+      return MinecraftTheme.accentOrange;
+    }
+    return MinecraftTheme.battleRed;
   }
 }

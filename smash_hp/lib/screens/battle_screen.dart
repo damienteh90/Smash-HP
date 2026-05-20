@@ -27,6 +27,9 @@ class _BattleScreenState extends State<BattleScreen> {
   final ScrollController _logScrollController = ScrollController();
   bool _logExpanded = true;
   bool _showHitPose = false;
+  String? _attackPopupText;
+  Color _attackPopupColor = MinecraftTheme.primaryGold;
+  int _feedbackToken = 0;
 
   @override
   void initState() {
@@ -73,6 +76,34 @@ class _BattleScreenState extends State<BattleScreen> {
     });
   }
 
+  void _showAttackFeedback({
+    required String text,
+    required Color color,
+    required bool showHitPose,
+  }) {
+    final token = ++_feedbackToken;
+
+    setState(() {
+      _attackPopupText = text;
+      _attackPopupColor = color;
+      _showHitPose = showHitPose;
+    });
+
+    if (showHitPose) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && token == _feedbackToken && session.currentHp > 0) {
+          setState(() => _showHitPose = false);
+        }
+      });
+    }
+
+    Future.delayed(const Duration(milliseconds: 850), () {
+      if (mounted && token == _feedbackToken) {
+        setState(() => _attackPopupText = null);
+      }
+    });
+  }
+
   void _attackMe() async {
     final (newHp, logMessage, damage, wasMiss, wasCritical) =
         BattleLogic.calculateAttack(profile, session);
@@ -80,14 +111,23 @@ class _BattleScreenState extends State<BattleScreen> {
     session = BattleLogic.applyAttack(session, profile, newHp, logMessage);
     _saveBattle();
 
-    setState(() => _showHitPose = true);
-    _scrollLogToLatest();
+    final popupText = wasMiss
+        ? 'MISS!'
+        : wasCritical
+        ? 'CRITICAL! -$damage HP'
+        : 'HIT -$damage HP';
+    final popupColor = wasMiss
+        ? MinecraftTheme.primaryGold
+        : wasCritical
+        ? MinecraftTheme.accentOrange
+        : MinecraftTheme.battleRed;
 
-    Future.delayed(const Duration(milliseconds: 350), () {
-      if (mounted) {
-        setState(() => _showHitPose = false);
-      }
-    });
+    _showAttackFeedback(
+      text: popupText,
+      color: popupColor,
+      showHitPose: !wasMiss,
+    );
+    _scrollLogToLatest();
 
     if (session.isKo) {
       await Future.delayed(const Duration(milliseconds: 500));
@@ -164,280 +204,344 @@ class _BattleScreenState extends State<BattleScreen> {
           leadingWidth: 86,
         ),
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              // Player Info Section - Top Card
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
-                child: PixelCard(
-                  borderColor: MinecraftTheme.deepStoneCharcoal,
-                  backgroundColor: MinecraftTheme.warmCream,
-                  shadowOffset: 4,
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Character
-                      SizedBox(
-                        height: 110,
-                        child: CharacterImage(
-                          characterId: profile.avatarId,
-                          pose: _showHitPose
-                              ? CharacterPose.hit
-                              : CharacterPose.idle,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      // Player Name
-                      Text(
-                        profile.playerName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: MinecraftTheme.textDark,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      // Round
-                      Container(
-                        decoration: BoxDecoration(
-                          color: MinecraftTheme.warnYellow,
-                          border: Border.all(
-                            color: MinecraftTheme.deepStoneCharcoal,
-                            width: 2,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 3,
-                        ),
-                        child: Text(
-                          'ROUND ${session.roundNumber}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: MinecraftTheme.textDark,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // HP Bar
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: MinecraftTheme.deepStoneCharcoal,
-                            width: 2,
-                          ),
-                        ),
-                        child: HpBar(
-                          currentHp: session.currentHp,
-                          maxHp: session.maxHp,
-                          height: 24,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      // HP Text
-                      Text(
-                        '${session.currentHp} / ${session.maxHp} HP',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: MinecraftTheme.textDark,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // ATTACK ME Button - Very Prominent
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 96,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: MinecraftTheme.battleRed.withValues(
-                            alpha: 0.3,
-                          ),
-                          offset: const Offset(0, 4),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: PixelButton(
-                      label: 'ATTACK ME!!!',
-                      onPressed: _attackMe,
-                      isPrimary: true,
-                      backgroundColor: MinecraftTheme.battleRed,
+              Column(
+                children: [
+                  // Player Info Section - Top Card
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+                    child: PixelCard(
                       borderColor: MinecraftTheme.deepStoneCharcoal,
-                      padding: 16,
-                    ),
-                  ),
-                ),
-              ),
-              // Control Buttons
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-                child: SizedBox(
-                  height: 48,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: PixelButton(
-                          label: 'UNDO',
-                          onPressed: session.undoStack.isNotEmpty
-                              ? _undo
-                              : () {},
-                          isPrimary: false,
-                          isDisabled: session.undoStack.isEmpty,
-                          backgroundColor: MinecraftTheme.darkBrownWood,
-                          borderColor: MinecraftTheme.deepStoneCharcoal,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: PixelButton(
-                          label: 'NEW ROUND',
-                          onPressed: _newRound,
-                          isPrimary: false,
-                          backgroundColor: MinecraftTheme.primaryGold,
-                          borderColor: MinecraftTheme.deepStoneCharcoal,
-                          textColor: MinecraftTheme.deepStoneCharcoal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Battle Log - Collapsible Panel
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: MinecraftTheme.deepStoneCharcoal,
-                        width: MinecraftTheme.chunkBorderWidth,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: MinecraftTheme.darkBrownWood.withValues(
-                            alpha: 0.3,
+                      backgroundColor: MinecraftTheme.warmCream,
+                      shadowOffset: 4,
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Character
+                          SizedBox(
+                            height: 110,
+                            child: CharacterImage(
+                              characterId: profile.avatarId,
+                              pose: _showHitPose
+                                  ? CharacterPose.hit
+                                  : CharacterPose.idle,
+                            ),
                           ),
-                          offset: const Offset(2, 2),
-                          blurRadius: 0,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // Header
-                        GestureDetector(
-                          onTap: () {
-                            setState(() => _logExpanded = !_logExpanded);
-                            if (_logExpanded) {
-                              _scrollLogToLatest();
-                            }
-                          },
-                          child: Container(
+                          const SizedBox(height: 6),
+                          // Player Name
+                          Text(
+                            profile.playerName,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: MinecraftTheme.textDark,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          // Round
+                          Container(
+                            decoration: BoxDecoration(
+                              color: MinecraftTheme.warnYellow,
+                              border: Border.all(
+                                color: MinecraftTheme.deepStoneCharcoal,
+                                width: 2,
+                              ),
+                            ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
-                              vertical: 10,
+                              vertical: 3,
                             ),
-                            color: MinecraftTheme.darkBrownWood,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'BATTLE LOG',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: MinecraftTheme.textLight,
-                                    letterSpacing: 1.0,
-                                  ),
+                            child: Text(
+                              'ROUND ${session.roundNumber}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: MinecraftTheme.textDark,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // HP Bar
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: MinecraftTheme.deepStoneCharcoal,
+                                width: 2,
+                              ),
+                            ),
+                            child: HpBar(
+                              currentHp: session.currentHp,
+                              maxHp: session.maxHp,
+                              height: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          // HP Text
+                          Text(
+                            '${session.currentHp} / ${session.maxHp} HP',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: MinecraftTheme.textDark,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // ATTACK ME Button - Very Prominent
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 96,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: MinecraftTheme.battleRed.withValues(
+                                alpha: 0.3,
+                              ),
+                              offset: const Offset(0, 4),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: PixelButton(
+                          label: 'ATTACK ME!!!',
+                          onPressed: _attackMe,
+                          isPrimary: true,
+                          backgroundColor: MinecraftTheme.battleRed,
+                          borderColor: MinecraftTheme.deepStoneCharcoal,
+                          padding: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Control Buttons
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                    child: SizedBox(
+                      height: 48,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: PixelButton(
+                              label: 'UNDO',
+                              onPressed: session.undoStack.isNotEmpty
+                                  ? _undo
+                                  : () {},
+                              isPrimary: false,
+                              isDisabled: session.undoStack.isEmpty,
+                              backgroundColor: MinecraftTheme.darkBrownWood,
+                              borderColor: MinecraftTheme.deepStoneCharcoal,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: PixelButton(
+                              label: 'NEW ROUND',
+                              onPressed: _newRound,
+                              isPrimary: false,
+                              backgroundColor: MinecraftTheme.primaryGold,
+                              borderColor: MinecraftTheme.deepStoneCharcoal,
+                              textColor: MinecraftTheme.deepStoneCharcoal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Battle Log - Collapsible Panel
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: MinecraftTheme.deepStoneCharcoal,
+                            width: MinecraftTheme.chunkBorderWidth,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: MinecraftTheme.darkBrownWood.withValues(
+                                alpha: 0.3,
+                              ),
+                              offset: const Offset(2, 2),
+                              blurRadius: 0,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Header
+                            GestureDetector(
+                              onTap: () {
+                                setState(() => _logExpanded = !_logExpanded);
+                                if (_logExpanded) {
+                                  _scrollLogToLatest();
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
                                 ),
-                                Icon(
-                                  _logExpanded
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
-                                  color: MinecraftTheme.textLight,
-                                  size: 20,
+                                color: MinecraftTheme.darkBrownWood,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'BATTLE LOG',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: MinecraftTheme.textLight,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                    Icon(
+                                      _logExpanded
+                                          ? Icons.expand_less
+                                          : Icons.expand_more,
+                                      color: MinecraftTheme.textLight,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Log Content
+                            if (_logExpanded)
+                              Expanded(
+                                child: Container(
+                                  color: MinecraftTheme.warmCream,
+                                  padding: const EdgeInsets.all(12),
+                                  child: session.battleLog.isEmpty
+                                      ? Center(
+                                          child: Text(
+                                            'No battle events yet',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: MinecraftTheme.textDark
+                                                  .withValues(alpha: 0.5),
+                                              fontStyle: FontStyle.italic,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          ),
+                                        )
+                                      : ListView.builder(
+                                          controller: _logScrollController,
+                                          itemCount: session.battleLog.length,
+                                          itemBuilder: (context, index) {
+                                            final entry =
+                                                session.battleLog[index];
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: 6,
+                                              ),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      MinecraftTheme.warmCream,
+                                                  border: Border.all(
+                                                    color: MinecraftTheme
+                                                        .primaryGold
+                                                        .withValues(alpha: 0.3),
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  entry.message,
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        MinecraftTheme.textDark,
+                                                    letterSpacing: 0.2,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                ),
+                              )
+                            else
+                              Expanded(child: Container()),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              IgnorePointer(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  transitionBuilder: (child, animation) {
+                    final scale = Tween<double>(begin: 0.85, end: 1.0).animate(
+                      CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                    );
+
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(scale: scale, child: child),
+                    );
+                  },
+                  child: _attackPopupText == null
+                      ? const SizedBox.shrink()
+                      : Align(
+                          key: ValueKey(_attackPopupText),
+                          alignment: const Alignment(0, -0.22),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: MinecraftTheme.deepStoneCharcoal,
+                              border: Border.all(
+                                color: _attackPopupColor,
+                                width: MinecraftTheme.chunkBorderWidth,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _attackPopupColor.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                  offset: const Offset(3, 3),
+                                  blurRadius: 0,
+                                  spreadRadius: 1,
                                 ),
                               ],
                             ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                            child: Text(
+                              _attackPopupText!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: _attackPopupColor,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                           ),
                         ),
-                        // Log Content
-                        if (_logExpanded)
-                          Expanded(
-                            child: Container(
-                              color: MinecraftTheme.warmCream,
-                              padding: const EdgeInsets.all(12),
-                              child: session.battleLog.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                        'No battle events yet',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: MinecraftTheme.textDark
-                                              .withValues(alpha: 0.5),
-                                          fontStyle: FontStyle.italic,
-                                          letterSpacing: 0.3,
-                                        ),
-                                      ),
-                                    )
-                                  : ListView.builder(
-                                      controller: _logScrollController,
-                                      itemCount: session.battleLog.length,
-                                      itemBuilder: (context, index) {
-                                        final entry = session.battleLog[index];
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 6,
-                                          ),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: MinecraftTheme.warmCream,
-                                              border: Border.all(
-                                                color: MinecraftTheme
-                                                    .primaryGold
-                                                    .withValues(alpha: 0.3),
-                                                width: 1,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              entry.message,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: MinecraftTheme.textDark,
-                                                letterSpacing: 0.2,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                            ),
-                          )
-                        else
-                          Expanded(child: Container()),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ],

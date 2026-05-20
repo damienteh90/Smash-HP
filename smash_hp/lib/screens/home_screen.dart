@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../models/character_avatar.dart';
 import '../services/local_storage_service.dart';
 import '../theme/minecraft_theme.dart';
-import '../widgets/pixel_card.dart';
-import '../widgets/primary_action_button.dart';
 import 'battle_screen.dart';
 import 'player_setup_screen.dart';
 
@@ -41,16 +39,21 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text('SMASH HP'),
           elevation: 0,
           backgroundColor: MinecraftTheme.primaryGold,
-          foregroundColor: MinecraftTheme.textLight,
+          foregroundColor: MinecraftTheme.deepStoneCharcoal,
           automaticallyImplyLeading: false,
           centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: MinecraftTheme.textLight,
-            letterSpacing: 1.5,
+          leading: const Icon(
+            Icons.menu,
+            color: MinecraftTheme.deepStoneCharcoal,
+            size: 28,
           ),
-          toolbarHeight: 60,
+          titleTextStyle: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: MinecraftTheme.deepStoneCharcoal,
+            letterSpacing: 0.8,
+          ),
+          toolbarHeight: 52,
           shape: Border(
             bottom: BorderSide(
               color: MinecraftTheme.deepStoneCharcoal,
@@ -70,16 +73,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     'SAVED PROFILE',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: MinecraftTheme.textDark,
-                      letterSpacing: 1.5,
+                      color: MinecraftTheme.darkBrownWood.withValues(
+                        alpha: 0.28,
+                      ),
+                      letterSpacing: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  PixelCard(
-                    borderColor: MinecraftTheme.deepStoneCharcoal,
-                    backgroundColor: MinecraftTheme.darkBrownWood,
+                  const SizedBox(height: 22),
+                  _HomePanel(
                     child: Column(
                       children: [
                         SizedBox(
@@ -94,31 +97,40 @@ class _HomeScreenState extends State<HomeScreen> {
                           savedProfile.playerName,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 22,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: MinecraftTheme.textLight,
+                            color: MinecraftTheme.deepStoneCharcoal,
                             letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 20),
                         Container(
+                          width: double.infinity,
                           decoration: BoxDecoration(
-                            color: MinecraftTheme.healthGreen,
+                            color: MinecraftTheme.hpGreen,
                             border: Border.all(
-                              color: MinecraftTheme.darkGreen,
-                              width: 2,
+                              color: MinecraftTheme.deepStoneCharcoal,
+                              width: 3,
                             ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0xFF2A1D12),
+                                offset: Offset(3, 3),
+                                blurRadius: 0,
+                              ),
+                            ],
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
-                            vertical: 6,
+                            vertical: 8,
                           ),
                           child: Text(
                             'MAX HP: ${savedProfile.maxHp}',
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: MinecraftTheme.textLight,
+                              color: MinecraftTheme.deepStoneCharcoal,
                               letterSpacing: 1.0,
                             ),
                           ),
@@ -129,15 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 32),
                 ] else ...[
                   const SizedBox(height: 32),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: MinecraftTheme.warnYellow,
-                      border: Border.all(
-                        color: MinecraftTheme.textDark,
-                        width: MinecraftTheme.chunkBorderWidth,
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(16),
+                  _HomePanel(
                     child: Text(
                       'NO SAVED PROFILE YET',
                       textAlign: TextAlign.center,
@@ -151,8 +155,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
-                PrimaryActionButton(
+                _HomeActionButton(
                   label: 'PLAYER SETUP',
+                  icon: Icons.group_add,
                   onPressed: () {
                     Navigator.of(
                       context,
@@ -160,14 +165,125 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   backgroundColor: MinecraftTheme.darkBrownWood,
                   borderColor: MinecraftTheme.deepStoneCharcoal,
+                  textColor: MinecraftTheme.warmCream,
                 ),
                 const SizedBox(height: 16),
-                PrimaryActionButton(
+                _HomeActionButton(
                   label: 'START BATTLE',
+                  icon: Icons.flash_on,
                   onPressed: _startBattle,
                   backgroundColor: MinecraftTheme.hpGreen,
                   borderColor: MinecraftTheme.deepStoneCharcoal,
                   textColor: MinecraftTheme.deepStoneCharcoal,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomePanel extends StatelessWidget {
+  const _HomePanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: MinecraftTheme.warmCream,
+        border: Border.all(
+          color: MinecraftTheme.deepStoneCharcoal,
+          width: MinecraftTheme.chunkBorderWidth,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0xFF2A1D12),
+            offset: Offset(6, 6),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: child,
+    );
+  }
+}
+
+class _HomeActionButton extends StatefulWidget {
+  const _HomeActionButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.textColor,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color textColor;
+
+  @override
+  State<_HomeActionButton> createState() => _HomeActionButtonState();
+}
+
+class _HomeActionButtonState extends State<_HomeActionButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onPressed();
+      },
+      child: Transform.translate(
+        offset: _isPressed ? const Offset(3, 3) : Offset.zero,
+        child: Container(
+          height: 58,
+          decoration: BoxDecoration(
+            color: widget.backgroundColor,
+            border: Border.all(
+              color: widget.borderColor,
+              width: MinecraftTheme.chunkBorderWidth,
+            ),
+            boxShadow: _isPressed
+                ? []
+                : const [
+                    BoxShadow(
+                      color: Color(0xFF2A1D12),
+                      offset: Offset(6, 6),
+                      blurRadius: 0,
+                    ),
+                  ],
+          ),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(widget.icon, color: widget.textColor, size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  widget.label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: widget.textColor,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ],
             ),
