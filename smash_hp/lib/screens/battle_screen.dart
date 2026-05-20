@@ -8,6 +8,7 @@ import '../models/character_avatar.dart';
 import '../models/player_profile.dart';
 import '../services/battle_logic.dart';
 import '../services/local_storage_service.dart';
+import '../services/sound_effects.dart';
 import '../theme/minecraft_theme.dart';
 import '../widgets/hp_bar.dart';
 import '../widgets/pixel_button.dart';
@@ -153,6 +154,22 @@ class _BattleScreenState extends State<BattleScreen>
     }
   }
 
+  void _playAttackSound({
+    required bool wasMiss,
+    required bool wasCritical,
+    required bool isKo,
+  }) {
+    if (isKo) {
+      SoundEffects.playKo();
+    } else if (wasMiss) {
+      SoundEffects.playMiss();
+    } else if (wasCritical) {
+      SoundEffects.playCritical();
+    } else {
+      SoundEffects.playHit();
+    }
+  }
+
   void _attackMe() async {
     final (newHp, logMessage, damage, wasMiss, wasCritical) =
         BattleLogic.calculateAttack(profile, session);
@@ -180,6 +197,7 @@ class _BattleScreenState extends State<BattleScreen>
     );
     _playAttackHaptic(wasMiss: wasMiss, wasCritical: wasCritical, isKo: isKo);
     _playAttackShake(wasMiss: wasMiss, wasCritical: wasCritical, isKo: isKo);
+    _playAttackSound(wasMiss: wasMiss, wasCritical: wasCritical, isKo: isKo);
     _scrollLogToLatest();
 
     if (isKo) {
