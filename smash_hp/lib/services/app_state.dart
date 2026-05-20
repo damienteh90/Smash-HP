@@ -1,3 +1,1 @@
-import 'local_storage_service.dart';
-
-final localStorage = LocalStorageService();
+export 'local_storage_service.dart';

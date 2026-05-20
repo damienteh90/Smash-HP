@@ -6,10 +6,12 @@ import 'screens/home_screen.dart';
 import 'screens/ko_screen.dart';
 import 'screens/player_setup_screen.dart';
 import 'screens/splash_screen.dart';
+import 'services/local_storage_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await localStorage.initialize();
 
   runApp(const SmashHpApp());
 }
@@ -23,7 +25,7 @@ class SmashHpApp extends StatelessWidget {
       title: 'Smash HP',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.redAccent),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFD89A00)),
         useMaterial3: true,
       ),
       initialRoute: SplashScreen.routeName,

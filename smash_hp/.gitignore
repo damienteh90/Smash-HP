@@ -13,3 +13,9 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Flutter local metadata
+.metadata
+
+# temp files
+tmp_patch_snippet.txt
