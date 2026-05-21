@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../models/battle_session.dart';
 import '../models/character_avatar.dart';
@@ -27,11 +28,16 @@ class BattleScreen extends StatefulWidget {
 
 class _BattleScreenState extends State<BattleScreen>
     with SingleTickerProviderStateMixin {
+  static const String _testBannerAdUnitId =
+      'ca-app-pub-3940256099942544/6300978111';
+
   late PlayerProfile profile;
   late BattleSession session;
   final ScrollController _logScrollController = ScrollController();
   late final AnimationController _shakeController;
+  BannerAd? _bannerAd;
   bool _logExpanded = true;
+  bool _isBannerAdLoaded = false;
   bool _showHitPose = false;
   String? _attackPopupText;
   Color _attackPopupColor = MinecraftTheme.primaryGold;
@@ -46,6 +52,7 @@ class _BattleScreenState extends State<BattleScreen>
       duration: const Duration(milliseconds: 220),
     );
     _initializeBattle();
+    _loadBannerAd();
   }
 
   void _initializeBattle() {
@@ -63,8 +70,43 @@ class _BattleScreenState extends State<BattleScreen>
     localStorage.saveActiveBattleSession(session);
   }
 
+  void _loadBannerAd() {
+    final bannerAd = BannerAd(
+      adUnitId: _testBannerAdUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (!mounted) {
+            ad.dispose();
+            return;
+          }
+
+          setState(() {
+            _bannerAd = ad as BannerAd;
+            _isBannerAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            _bannerAd = null;
+            _isBannerAdLoaded = false;
+          });
+        },
+      ),
+    );
+
+    bannerAd.load();
+  }
+
   @override
   void dispose() {
+    _bannerAd?.dispose();
     _shakeController.dispose();
     _logScrollController.dispose();
     super.dispose();
@@ -601,7 +643,10 @@ class _BattleScreenState extends State<BattleScreen>
                               ),
                             ),
                             const SizedBox(height: 10),
-                            _AdBannerPlaceholder(),
+                            _BattleBannerAd(
+                              bannerAd: _bannerAd,
+                              isLoaded: _isBannerAdLoaded,
+                            ),
                           ],
                         ),
                       ),
@@ -666,6 +711,29 @@ class _BattleScreenState extends State<BattleScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BattleBannerAd extends StatelessWidget {
+  const _BattleBannerAd({required this.bannerAd, required this.isLoaded});
+
+  final BannerAd? bannerAd;
+  final bool isLoaded;
+
+  @override
+  Widget build(BuildContext context) {
+    final ad = bannerAd;
+    if (!isLoaded || ad == null) {
+      return _AdBannerPlaceholder();
+    }
+
+    return Center(
+      child: SizedBox(
+        height: ad.size.height.toDouble(),
+        width: ad.size.width.toDouble(),
+        child: AdWidget(ad: ad),
       ),
     );
   }
