@@ -28,8 +28,8 @@ class BattleScreen extends StatefulWidget {
 
 class _BattleScreenState extends State<BattleScreen>
     with SingleTickerProviderStateMixin {
-  static const String _testBannerAdUnitId =
-      'ca-app-pub-3940256099942544/6300978111';
+  static const String _bannerAdUnitId =
+      'ca-app-pub-2663845918445287/3739173291';
 
   late PlayerProfile profile;
   late BattleSession session;
@@ -72,7 +72,7 @@ class _BattleScreenState extends State<BattleScreen>
 
   void _loadBannerAd() {
     final bannerAd = BannerAd(
-      adUnitId: _testBannerAdUnitId,
+      adUnitId: _bannerAdUnitId,
       request: const AdRequest(),
       size: AdSize.banner,
       listener: BannerAdListener(
