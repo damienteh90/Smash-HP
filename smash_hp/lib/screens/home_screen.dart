@@ -31,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final savedProfile = localStorage.getPlayerProfile();
+    final customAvatarImages = localStorage.getCustomAvatarImages();
 
     return PopScope(
       canPop: false,
@@ -104,6 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: CharacterImage(
                             characterId: savedProfile.avatarId,
                             pose: CharacterPose.idle,
+                            customAvatarImages: customAvatarImages,
                           ),
                         ),
                         const SizedBox(height: 16),

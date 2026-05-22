@@ -279,6 +279,8 @@ class _BattleScreenState extends State<BattleScreen>
 
   @override
   Widget build(BuildContext context) {
+    final customAvatarImages = localStorage.getCustomAvatarImages();
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -364,6 +366,7 @@ class _BattleScreenState extends State<BattleScreen>
                                 pose: _showHitPose
                                     ? CharacterPose.hit
                                     : CharacterPose.idle,
+                                customAvatarImages: customAvatarImages,
                               ),
                             ),
                             const SizedBox(height: 6),

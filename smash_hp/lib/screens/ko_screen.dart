@@ -36,6 +36,7 @@ class KoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profile = localStorage.getPlayerProfile();
+    final customAvatarImages = localStorage.getCustomAvatarImages();
 
     return PopScope(
       canPop: false,
@@ -81,6 +82,7 @@ class KoScreen extends StatelessWidget {
                         characterId:
                             profile?.avatarId ?? CharacterAvatar.fallback.id,
                         pose: CharacterPose.dead,
+                        customAvatarImages: customAvatarImages,
                       ),
                     ),
                     const SizedBox(height: 32),

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../models/character_avatar.dart';
@@ -6,6 +8,7 @@ import '../services/local_storage_service.dart';
 import '../theme/minecraft_theme.dart';
 import '../widgets/pixel_card.dart';
 import '../widgets/primary_action_button.dart';
+import 'custom_avatar_setup_dialog.dart';
 import 'home_screen.dart';
 
 class PlayerSetupScreen extends StatefulWidget {
@@ -27,12 +30,14 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
   double _criticalMultiplier = 1.5;
   int _healAmount = 5;
   int _missChance = 10;
+  CustomAvatarImages? _customAvatarImages;
 
   @override
   void initState() {
     super.initState();
     // Load existing profile if available
     final profile = localStorage.getPlayerProfile();
+    _customAvatarImages = localStorage.getCustomAvatarImages();
     if (profile != null) {
       _playerNameController = TextEditingController(text: profile.playerName);
       _avatarId = profile.avatarId;
@@ -55,6 +60,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
 
   void _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!await _canSaveSelectedAvatar()) return;
 
     final profile = PlayerProfile(
       playerName: _playerNameController.text.trim(),
@@ -72,6 +78,56 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
     if (mounted) {
       Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
     }
+  }
+
+  Future<bool> _canSaveSelectedAvatar() async {
+    if (_avatarId != CharacterAvatar.customId) {
+      return true;
+    }
+
+    final images = _customAvatarImages;
+    if (images == null || !images.isComplete) {
+      _showAvatarValidation('Add idle, hit, and dead images first.');
+      return false;
+    }
+
+    final paths = [images.idlePath, images.hitPath, images.deadPath];
+    final exists = await Future.wait(paths.map((path) => File(path).exists()));
+    if (exists.any((exists) => !exists)) {
+      _showAvatarValidation(
+        'One custom avatar image is missing. Set up CUSTOM again.',
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  void _showAvatarValidation(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: MinecraftTheme.battleRed,
+      ),
+    );
+  }
+
+  Future<void> _openCustomAvatarSetup() async {
+    final images = await showDialog<CustomAvatarImages>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) =>
+          CustomAvatarSetupDialog(initialImages: _customAvatarImages),
+    );
+
+    if (!mounted || images == null) {
+      return;
+    }
+
+    setState(() {
+      _customAvatarImages = images;
+      _avatarId = CharacterAvatar.customId;
+    });
   }
 
   Widget _buildStatSlider({
@@ -129,9 +185,12 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
 
   Widget _buildCharacterButton(CharacterAvatar character) {
     final isSelected = _avatarId == character.id;
+    final isCustom = character.id == CharacterAvatar.customId;
 
     return GestureDetector(
-      onTap: () => setState(() => _avatarId = character.id),
+      onTap: isCustom
+          ? _openCustomAvatarSetup
+          : () => setState(() => _avatarId = character.id),
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
@@ -159,10 +218,12 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
-              child: CharacterImage(
-                characterId: character.id,
-                pose: CharacterPose.idle,
-              ),
+              child: isCustom
+                  ? _buildCustomAvatarSlotContent(isSelected: isSelected)
+                  : CharacterImage(
+                      characterId: character.id,
+                      pose: CharacterPose.idle,
+                    ),
             ),
             const SizedBox(height: 4),
             FittedBox(
@@ -183,6 +244,42 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCustomAvatarSlotContent({required bool isSelected}) {
+    final images = _customAvatarImages;
+    if (images != null) {
+      return CharacterImage(
+        characterId: CharacterAvatar.customId,
+        pose: CharacterPose.idle,
+        customAvatarImages: images,
+      );
+    }
+
+    final color = isSelected
+        ? MinecraftTheme.deepStoneCharcoal
+        : MinecraftTheme.warmCream;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.add, color: color, size: 26),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'ADD AVATAR',
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: color,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -311,6 +408,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
                           child: CharacterImage(
                             characterId: _avatarId,
                             pose: CharacterPose.idle,
+                            customAvatarImages: _customAvatarImages,
                           ),
                         ),
                       ),
@@ -318,7 +416,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: CharacterAvatar.all.length,
+                        itemCount: CharacterAvatar.selectionSlots.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 4,
@@ -328,7 +426,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
                             ),
                         itemBuilder: (context, index) {
                           return _buildCharacterButton(
-                            CharacterAvatar.all[index],
+                            CharacterAvatar.selectionSlots[index],
                           );
                         },
                       ),
